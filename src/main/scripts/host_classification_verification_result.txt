@@ -157,7 +157,6 @@ ratio threshold >40: missing 362 hosts ==> false negative = 0.43%
 ratio threshold =>40: missing 1 hosts ==> false negative = 0.00%
 
 
-
 When threshold is >50, following are missed {dstip, dstpot} pairs
 dstip, dstport, max_ratio
 181104489   32803   50
