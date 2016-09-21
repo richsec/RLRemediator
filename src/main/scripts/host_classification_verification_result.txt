@@ -1,0 +1,763 @@
+Verification for host classification
+Consider traffic with ts \in [1473638400000, 1474310025000].
+Only consider connection with return traffic 
+(dst to src, i.e. conn_dir = 0) in the flow log summary
+
+1. Traffic between office and RedLock AWS.
+
+No filtering out low-ratio packets
+Host detected:
+#   port
+6   22
+5   443
+1   80
+
+2. Traffic between office and RedLock AWS. 
+
+Filtering out low-ratio packets (ratio < 80)
+Host detected:
+#   port
+5   443
+6   22
+1   80
+
+==> no host lost
+becaus all traffic shoudl be legitimate ==> no classification false negative
+
+
+3. All traffic from non-public ips (but dstip could be public)
+traffic of RedLock AWS
+No filtering out low-ratio packets
+Host detected:
+#   port
+1047    443
+137 80
+15  22
+6   8080
+4   8443
+4   5432
+2   9418
+2   5439
+2   6379
+1   3845
+1   27015
+1   3446
+1   2657
+1   2755
+1   3893
+1   3603
+
+4. All traffic from non-public ips (but dstip could be public)
+traffic of RedLock AWS
+Filtering out low-ratio packets
+Host detected:
+#   port
+1047    443
+135 80          missed 2:  90.156.201.80 and 74.125.71.132
+15  22
+6   8080
+4   5432
+4   8443
+2   5439
+2   6379
+2   9418
+
+missed 
+2   80      fe.shared.masterhost.ru 90.156.201.80
+            wn-in-f132.1e100.net 74.125.71.132
+1   3845    node-elh.pool-1-0.dynamic.totbb.net 16828901    
+1   27015   188.127.239.74
+1   3446    16.234.65.188.m9com.ru 188.65.234.16
+1   2657    82.114.89.33
+1   2755    168.195.66.156
+1   3893    node-bx.pool-125-26.dynamic.totbb.net  125.26.1.173
+1   3603    185.27.9.249
+
+in total false negative = 9 / 1226 = 0.7%
+The missing traffic looks like the traffic from RedLock AWS to dst of public ips
+
+
+5. All traffic from non-public ips to non-public ips in RedLock AWS
+No filtering out low-ratio packets
+Host detected:
+#   port
+8   22
+6   8080
+4   5432
+2   5439
+2   8443
+2   443
+2   6379
+2   80
+
+6. All traffic from non-public ips to non-public ips in RedLock AWS
+Filtering out low-ratio packets
+Host detected:
+#   port
+8   22
+6   8080
+4   5432
+2   6379
+2   443
+2   8443
+2   5439
+2   80
+
+==> no missing hosts for threshold >150 even.
+for threshold >200, 2 missed.
+
+7. All traffic from non-public ips to non-public ips in Workday AWS
+No filtering out low-ratio packets
+Host detected:
+84774 hosts
+
+8. All traffic from non-public ips to non-public ips in Workday AWS
+Filtering out low-ratio packets
+ratio threshold >200: missing 32338 hosts ==> false negative = 38.1%
+ratio threshold >150: missing 18297 hosts ==> false negative = 21.6%
+ratio threshold >120: missing 6107 hosts ==> false negative = 7.2%
+ratio threshold >110: missing 5674 hosts ==> false negative = 6.7%
+ratio threshold >104: missing 5601 hosts ==> false negative = 6.6%
+ratio threshold >103: missing 1875 hosts ==> false negative = 2.2%
+ratio threshold >100: missing 1853 hosts ==> false negative = 2.2%
+ratio threshold >80: missing 1595 hosts ==> false negative = 1.9%
+ratio threshold >70: missing 1340 hosts ==> false negative = 1.6%
+ratio threshold >60: missing 1028 hosts ==> false negative = 1.2%
+ratio threshold >55: missing 935 hosts ==> false negative = 1.1%
+ratio threshold >52: missing 774 hosts ==> false negative = 0.9%
+ratio threshold >51: missing 409 hosts ==> false negative = 0.48%
+ratio threshold >50: missing 409 hosts ==> false negative = 0.48%
+ratio threshold >49: missing 388 hosts ==> false negative = 0.46%
+ratio threshold >48: missing 387 hosts ==> false negative = 0.46%
+ratio threshold >44: missing 387 hosts ==> false negative = 0.46%
+ratio threshold >43: missing 368 hosts ==> false negative = 0.43%
+ratio threshold >40: missing 365 hosts ==> false negative = 0.43%
+ratio threshold =>40: missing 1 hosts ==> false negative = 0.00%
+
+Filtering out low-ratio packets and bytes % pkt = 0
+ratio threshold >200: missing 1078 hosts ==> false negative = 1.27%
+ratio threshold >150: missing 792 hosts ==> false negative = 0.93%
+ratio threshold >120: missing 618 hosts ==> false negative = 0.73%
+ratio threshold >110: missing 608 hosts ==> false negative = 0.72%
+ratio threshold >104: missing 601 hosts ==> false negative = 0.71%
+ratio threshold >103: missing 601 hosts ==> false negative = 0.71%
+ratio threshold >100: missing 600 hosts ==> false negative = 0.71%
+ratio threshold >80: missing 498 hosts ==> false negative = 0.59%
+ratio threshold >70: missing 488 hosts ==> false negative = 0.57%
+ratio threshold >60: missing 443 hosts ==> false negative = 0.52%
+ratio threshold >55: missing 435 hosts ==> false negative = 0.51%
+ratio threshold >52: missing 424 hosts ==> false negative = 0.5%
+ratio threshold >51: missing 403 hosts ==> false negative = 0.475%
+ratio threshold >50: missing 403 hosts ==> false negative = 0.475%
+ratio threshold >49: missing 381 hosts ==> false negative = 0.45%
+ratio threshold >48: missing 381 hosts ==> false negative = 0.45%
+ratio threshold >44: missing 381 hosts ==> false negative = 0.46%
+ratio threshold >43: missing 362 hosts ==> false negative = 0.43%
+ratio threshold >40: missing 362 hosts ==> false negative = 0.43%
+ratio threshold =>40: missing 1 hosts ==> false negative = 0.00%
+
+
+
+When threshold is >50, following are missed {dstip, dstpot} pairs
+dstip, dstport, max_ratio
+181104489   32803   50
+181104998   32803   50
+181104741   32803   50
+181104490   32803   50
+181104486   32803   50
+181104743   32803   50
+181104491   32803   50
+181105001   32803   50
+181039470   42106   50
+181104485   32803   50
+181104997   32803   50
+181104746   32803   50
+181104999   32803   50
+181104744   32803   50
+181105004   32803   50
+181104488   32803   50
+181104492   32803   50
+181104745   32803   50
+181104487   32803   50
+181104742   32803   50
+181105000   32803   50
+181122315   32803   50
+181021200   389 49
+181023720   4403    44
+181023720   4697    44
+181023720   2608    44
+181023720   1205    44
+181023720   1281    44
+181023720   4386    44
+181023720   1300    44
+181023720   3285    44
+181023720   3366    44
+181023720   1319    44
+181105002   2049    44
+181023720   2934    44
+181023720   1186    44
+181023720   20  44
+181023720   4825    44
+181023720   4896    44
+181023720   2059    44
+181023720   350 44
+181023720   2493    44
+181020943   514 43
+181021200   514 43
+181104488   445 40
+181104742   20  40
+181104744   135 40
+181104750   53  40
+181104999   445 40
+181105001   1   40
+...
+181105002   21  40
+181038949   135 40
+181013441   443 40
+181013441   21  40
+181122315   443 40
+181105002   443 40
+181023720   54017   29
+
+
+
+
+9. All traffic from public (inclduing from office) to RedLock AWS
+
+No filtering out low-ratio packets
+Host detected:
+#   port
+12  443
+9   22
+4   80
+3   8443
+2   8080
+1   8880
+1   2096
+
+10. All traffic from public (inclduing from office) to RedLock AWS
+Filtering out low-ratio packets (ratio < 80)
+Host detected:
+#   port
+12  443     should be true
+9   22      should be true
+3   8443    rest api host
+2   8080    splunk ingestion 1 host,
+1   8880    jenkins web 1 host
+1   2096    splunk 1 host
+1   80      W Open
+
+3 80-port hosts are filtered out (threshold >40)
+172.30.3.160
+172.30.0.114
+172.30.14.197
+All traffics from these three server 80 port are with ratio of 40, and should be RST with high probability.
+
+1 8880-port host are filtered out (threshold >86)
+This should be a false negative, because we know we have a host for jenkins at 8880 in our AWS is a special case, because the cloudfare send periodical TCP check packets to our web Jenkins, so the actual http flow is covered by a large number of small packets of 40 Bytes. Thus, we may want to check the raw flow data for accuracy in such special case.
+
+
+
+11. All traffic from public (inclduing from office) to Workday AWS
+No filtering out low-ratio packets: 6064 hosts
+
+12. 11. All traffic from public (inclduing from office) to Workday AWS
+Filtering out flows with low ratio:
+ratio threshold >200: excluding 1731 hosts
+ratio threshold >150: excluding 421 hosts
+ratio threshold >120: excluding 397 hosts
+ratio threshold >110: excluding 391 hosts
+ratio threshold >100: excluding 386 hosts
+ratio threshold >80: excluding 367 hosts
+ratio threshold >70: excluding 329 hosts
+ratio threshold >60: excluding 282 hosts
+ratio threshold >55: excluding 240 hosts
+ratio threshold >54: excluding 226 hosts    (*)
+ratio threshold >53: excluding 150 hosts
+ratio threshold >52: excluding 146 hosts
+ratio threshold >51: excluding 145 hosts
+ratio threshold >50: excluding 144 hosts
+ratio threshold >49: excluding 144 hosts
+ratio threshold >48: excluding 143 hosts    (*)
+ratio threshold >47: excluding 116 hosts
+ratio threshold >44: excluding 112 hosts    (*)
+ratio threshold >43: excluding 59 hosts
+ratio threshold >40: excluding 54 hosts     (*)
+ratio threshold =>40: excluding 0 hosts
+
+Filtering out flows with low ratio and bytes % pkts = 0 pack:
+ratio threshold >200: excluding 284 hosts
+ratio threshold >150: excluding 242 hosts
+ratio threshold >120: excluding 241 hosts
+ratio threshold >110: excluding 240 hosts
+ratio threshold >100: excluding 240 hosts
+ratio threshold >80: excluding 239 hosts    (*)
+ratio threshold >76: excluding 205 hosts
+ratio threshold >75: excluding 205 hosts
+ratio threshold >70: excluding 205 hosts
+ratio threshold >60: excluding 204 hosts
+ratio threshold >55: excluding 195 hosts
+ratio threshold >54: excluding 182 hosts    (*)
+ratio threshold >53: excluding 128 hosts
+ratio threshold >52: excluding 128 hosts
+ratio threshold >51: excluding 127 hosts
+ratio threshold >50: excluding 127 hosts
+ratio threshold >49: excluding 127 hosts
+ratio threshold >48: excluding 127 hosts    (*)
+ratio threshold >47: excluding 105 hosts
+ratio threshold >44: excluding 104 hosts    (*)
+ratio threshold >43: excluding 52 hosts
+ratio threshold >40: excluding 52 hosts     (*)
+ratio threshold =>40: excluding 0 hosts
+
+
+ratio threshold is >54, we excluded:
+dstip, dstport, max_ratio
+182214695   444 54
+182210739   444 54
+182210953   444 54
+182212856   444 54
+182220818   449 54
+182207878   449 54
+182206647   444 54
+182221449   444 54
+182207730   444 54
+182216774   444 54
+182211185   444 54
+182220641   444 54
+182219365   449 54
+182215921   444 54
+167772184   8003    54
+-1407249119 8002    54
+182208340   444 54
+182212158   444 54
+182213436   444 54
+182214864   444 54
+182207087   444 54
+167772184   8002    54
+182212145   444 54
+182221210   444 54
+184352523   443 54
+182206846   444 54
+182211745   444 54
+182219307   449 54
+182213915   444 54
+182210712   444 54
+-1407247115 8002    54
+-1407246847 8002    54
+182207611   444 54
+182217389   449 54
+182216177   444 54
+182220143   444 54
+182207371   444 54
+182208461   444 54
+182210121   444 54
+-1407248611 8002    54
+182214756   444 54
+182222261   444 54
+182213575   444 54
+182213570   444 54
+182209996   444 54
+167772318   8002    54
+182214266   444 54
+182208184   444 54
+167772318   8003    54
+182212077   444 54
+182210124   444 54
+182215710   444 54
+182219277   449 54
+182210189   444 54
+182206552   444 54
+-1407246847 8003    54
+182207343   444 54
+-1407249119 8003    54
+182211290   444 54
+182213778   443 54
+-1407248611 8003    54
+182220412   444 54
+182211272   444 54
+182213811   449 54
+182210900   444 54
+182206922   444 54          
+-1407247115 8003    54      6 in-bound pkts, 3 out-bound pkts, low traffic
+-1407244986 111 54      could be a connection
+182209039   444 54
+182217280   444 54
+182208683   444 54
+182214109   444 54
+182208164   444 54
+182222616   444 54
+182211152   444 54
+182209431   449 54      trojans? inbound traffic ratio is > 1400, many pkts
+182214636   449 53      trojans? inbound traffic ratio is > 1400, many pkts
+182207510   449 53      trojans? inbound traffic ratio is > 1400, many pkts
+182212077   449 53      trojans? inbound traffic ratio is > 1400, many pkts
+182216359   449 53      trojans? inbound traffic ratio is > 1400, many pkts
+184301077   443 52      src are
+                            researchscan306.eecs.umich.edu
+                            researchscan1.EECS.Berkeley.EDU
+                            ...
+                        looks not a connection
+182221821   22  51      looks not a connection
+182210643   444 49      src is census4.shodan.io
+182208968   22  48
+182211425   22  48
+182212053   22  48
+182221515   22  48
+182214709   22  48
+182209210   22  48
+182218360   22  48
+181084049   80  48
+182208894   22  48
+182218523   22  48
+182220226   22  48
+182221143   22  48
+182207302   22  48
+182215641   22  48
+182217011   22  48
+182213382   22  48
+182216367   22  48
+182216548   22  48
+182208849   22  48
+182218858   22  48
+182220401   22  48
+182208395   22  48
+182219408   22  48
+182218428   22  48
+182210951   22  48
+182221865   22  48
+182222363   22  48
+182206492   22  46      (looks not a connection)
+182206762   22  45      (looks not a connection)
+182206955   22  45      (looks not)
+182216765   22  45      (looks not)
+182213884   444 44
+182221909   443 44
+181084363   443 44
+182210817   444 44
+182210596   443 44
+182212866   443 44
+182207032   443 44
+182222191   443 44
+182206857   444 44
+182221033   443 44
+182208842   443 44
+182206475   443 44
+182219850   443 44
+182208014   22  44
+182210074   443 44
+182206724   443 44
+182217865   443 44
+182219129   22  44
+182214283   443 44
+182212694   443 44
+181084282   80  44
+182210225   443 44
+182222350   22  44
+182212187   443 44
+182217114   22  44
+182217573   444 44
+184352681   443 44
+181084625   80  44
+182206664   443 44
+182221865   443 44
+182208897   443 44
+182221456   22  44
+182206760   443 44
+182216092   443 44
+182206739   443 44
+182208723   443 44
+182212108   443 44
+182213249   443 44
+182209654   443 44
+182207010   443 44
+182207752   443 44
+182211239   443 44
+182210936   443 44
+182217375   443 44
+181084535   80  44
+182207029   444 44
+182212939   444 44
+182215226   443 44
+182217145   22  44
+182222566   443 44
+182218687   443 44
+182206922   443 44
+182221327   443 44
+182214010   22  43      (not connection)
+182219716   22  43      (not connection)
+182210394   22  43      (not connection)
+182222249   22  42      (not connection)
+182210652   22  42      (not connection)
+-1407249458 80  40
+-1407244986 8080    40
+-1407244986 25  40
+184091966   2506    40
+-1407250271 41374   40
+-1407249944 443 40
+-1407249458 8080    40
+-1407243228 8443    40
+-1407244986 21  40
+-1407246847 80  40
+-1407249458 35486   40
+-1407249458 443 40
+-1407248611 443 40
+-1407250271 443 40
+-1407244986 443 40
+-1407246847 50804   40
+-1407244986 2323    40
+182213333   9090    40
+-1407249119 8443    40
+-1407249944 80  40
+184352452   80  40
+181145643   8080    40
+-1407247115 443 40
+-1407249119 80  40
+-1407249119 50804   40
+-1407244986 7071    40
+181145644   8080    40
+181145659   8080    40
+-1407248611 50804   40
+184352694   80  40
+-1407248611 50802   40
+-1407245158 80  40
+181145649   8080    40
+-1407243228 80  40
+-1407244986 3389    40
+-1407245158 443 40
+-1407246847 8443    40
+184092088   52807   40
+-1407249119 443 40
+-1407250271 80  40
+181145657   8080    40
+184286990   8443    40
+-1407248611 8443    40
+-1407244986 135 40
+-1407244986 18229   40
+-1407244986 445 40
+-1407249944 8080    40
+182213105   22  40
+-1407249119 50802   40
+-1407248611 80  40
+-1407244986 23  40
+-1407244986 80  40
+-1407244986 8000    40
+184286991   8443    40
+
+
+
+ratio threshold is >54 or not bytes % pkt = 0
+we excluded:
+dstip, dstport, max_ratio
+182212856   444 54      src is census8.shodan.io
+182221449   444 54
+182215921   444 54
+182212145   444 54
+182208340   444 54
+182212158   444 54
+182206647   444 54
+182207730   444 54      src is census7.shodan.io
+182214695   444 54
+182213436   444 54
+182214864   444 54
+182207087   444 54
+182216774   444 54
+182211185   444 54
+182220641   444 54
+182210739   444 54
+182210953   444 54
+182221210   444 54      src is ninja.census.shodan.io
+182206846   444 54
+182210712   444 54
+182216177   444 54
+182211745   444 54
+182213915   444 54
+182210121   444 54
+182220143   444 54
+182207371   444 54
+182208461   444 54
+182214756   444 54
+182207611   444 54
+182214266   444 54      src is census8.shodan.io
+182208184   444 54
+182209996   444 54
+182211290   444 54
+182213778   443 54
+182207343   444 54
+182222261   444 54
+182213575   444 54
+182213570   444 54
+182210124   444 54
+182215710   444 54
+182210189   444 54      src is census9.shodan.io
+182206552   444 54
+182220412   444 54
+182211272   444 54
+182210900   444 54
+182206922   444 54
+182209039   444 54
+182217280   444 54
+182208683   444 54
+182214109   444 54
+182208164   444 54
+182222616   444 54
+182211152   444 54
+184301077   443 52
+182211425   22  48
+182208968   22  48
+182221515   22  48
+182212053   22  48
+182209210   22  48
+182214709   22  48
+182208894   22  48
+181084049   80  48
+182218523   22  48
+182220226   22  48
+182221143   22  48
+182207302   22  48
+182217011   22  48
+182216548   22  48
+182208849   22  48
+182213382   22  48
+182216367   22  48
+182208395   22  48
+182220401   22  48
+182221865   22  48
+182222363   22  48
+182218428   22  48
+182210951   22  48
+182206762   22  45
+182210817   444 44
+182210596   443 44
+182206475   443 44
+182206857   444 44
+182221033   443 44
+182208842   443 44
+182213884   444 44
+182221909   443 44
+182212866   443 44
+182207032   443 44
+182222191   443 44
+181084363   443 44
+182219850   443 44
+182208014   22  44
+182210074   443 44
+182212694   443 44
+181084282   80  44
+182210225   443 44
+182222350   22  44
+182206724   443 44
+182217865   443 44
+182219129   22  44
+182217114   22  44
+182214283   443 44
+182212187   443 44
+182217573   444 44
+184352681   443 44
+181084625   80  44
+182206664   443 44
+182216092   443 44
+182206739   443 44
+182209654   443 44
+182207010   443 44
+182207752   443 44
+182211239   443 44
+182221865   443 44
+182208897   443 44
+182221456   22  44
+182208723   443 44
+182212108   443 44
+182206760   443 44
+182213249   443 44
+182222566   443 44
+182206922   443 44
+182221327   443 44
+182210936   443 44
+182212939   444 44
+182215226   443 44
+182217375   443 44
+182207029   444 44
+182218687   443 44
+182217145   22  44
+181084535   80  44
+184091966   2506    40
+-1407250271 41374   40
+-1407244986 21  40
+-1407249458 35486   40
+-1407246847 80  40
+-1407249944 443 40
+-1407249458 80  40
+-1407244986 8080    40
+-1407244986 25  40
+-1407243228 8443    40
+-1407249458 8080    40
+-1407249458 443 40
+-1407248611 443 40
+-1407250271 443 40
+-1407244986 443 40
+-1407246847 50804   40
+-1407244986 2323    40
+182213333   9090    40
+-1407249944 80  40
+-1407249119 8443    40
+184352452   80  40
+181145643   8080    40
+-1407247115 443 40
+-1407249119 80  40
+-1407249119 50804   40
+-1407244986 7071    40
+181145644   8080    40
+181145659   8080    40
+-1407248611 50804   40
+184352694   80  40
+-1407245158 80  40
+-1407248611 50802   40
+-1407249119 443 40
+-1407250271 80  40
+181145657   8080    40
+181145649   8080    40
+-1407243228 80  40
+-1407244986 3389    40
+-1407245158 443 40
+-1407246847 8443    40
+-1407249119 50802   40
+-1407248611 80  40
+-1407244986 23  40
+-1407244986 80  40
+-1407244986 445 40
+-1407244986 8000    40
+184286991   8443    40
+-1407249944 8080    40
+184286990   8443    40
+-1407248611 8443    40
+-1407244986 135 40
+-1407244986 18229   40
+
+
+Result from 09/19/2016
+182210189   444 54
+182209103   443 54
+182213570   444 54
+182210953   444 54
+182207730   444 54
+182216177   444 54
+182216151   443 54
+182207097   444 54
+182209640   443 54
+184301077   443 52
+181084363   443 44
+184352681   443 44
+-1407243228 80  40
+-1407244986 3389    40
+-1407249119 443 40
+-1407244986 25  40
+-1407244986 21  40
+-1407248611 443 40
+-1407249458 443 40
+-1407250271 443 40
+-1407244986 2323    40
+184352452   80  40
+184352694   80  40
+-1407245158 80  40
+-1407244986 23  40
+-1407248611 80  40

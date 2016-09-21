@@ -5,6 +5,7 @@ from random import randint
 
 HOST_W_OPEN = '54.208.220.41'
 HOST_W_CLOSE = '52.45.56.227'
+WORKDAY_HOST = '54.187.235.74'
 
 num_conn = 100
 
@@ -38,11 +39,14 @@ def make_tcp_connections(host, port, num_conn):
 # # port 22
 # make_tcp_connections(HOST_W_OPEN, 22, num_conn)
 
-# port 80
-make_tcp_connections(HOST_W_CLOSE, 80, num_conn)
+# # port 80
+# make_tcp_connections(HOST_W_CLOSE, 80, num_conn)
 
-# port 443
-make_tcp_connections(HOST_W_CLOSE, 443, num_conn)
+# # port 443
+# make_tcp_connections(HOST_W_CLOSE, 443, num_conn)
 
-# port 22
-make_tcp_connections(HOST_W_CLOSE, 22, num_conn)
+# # port 22
+# make_tcp_connections(HOST_W_CLOSE, 22, num_conn)
+
+# Workday Host
+make_tcp_connections(WORKDAY_HOST, 443, 5)
