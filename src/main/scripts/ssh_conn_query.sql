@@ -157,3 +157,33 @@ from (
 group by 
     c.srcip, c.dstport, c.conn_dir, c.avg_bpf, c.avg_ratio, c.avg_ppf, c.avg_dpf
 ;
+
+
+
+
+-- Result of simulated SSH attack from office to W Open
+-- examine raw flow log between our office and W Open for SSH Attack research
+select
+    f_unixts_to_timestamp(ts,'ms') as ts,
+    f_unixts_to_timestamp(ts_end,'ms') as ts_end,   
+    ts as ts_unix,
+    ts_end as ts_end_unix,
+    ts_end - ts as ts_delta,
+    f_friendly_ip(srcip) as srcip_str,
+    srcport,
+    f.srcip, f.conn_dir, f.dstip,
+    bytes_vol / pkt_vol as ratio,
+    bytes_vol as bpf,
+    pkt_vol as ppf,
+    bytes_vol - pkt_vol * 40 as dpf
+from raw_flow_logs f
+where f.conn_dir = 1
+    and f.customer_id = 2 -- redlock id
+    and f.srcip = 854153670    -- gateway ip of redlock office since 8/22/2016
+    and f.issrcpublic = true
+    and f.isdstpublic = false
+    and f.dstport = 22
+    and f.ts >= 1475795102000       -- 2016-10-06 23:05:02 GMT
+    and f.ts <= 1475796903000       -- 2016-10-06 23:35:03 GMT
+    and f.dstip = -1062729170  -- ip of W Open 192.168.10.46
+;
