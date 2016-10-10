@@ -1,7 +1,4 @@
-import subprocess
-import sys
 from random import randint
-from time import sleep
 from pexpect import pxssh
 
 HOST_W_OPEN = '54.208.220.41'
@@ -44,7 +41,7 @@ if __name__ == "__main__":
     host = HOST_W_OPEN
     real_user = 'rl-hao'
     real_pwd = 'redlocktesthao'
-    num_users = 200
+    num_users = 0
     num_tries = 3
 
     for i in range(0, num_users):
