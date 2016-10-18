@@ -4,11 +4,11 @@ from utils import draw
 
 if __name__ == "__main__":
     resource_dir = './resources'
-    # result_file_name = 'ssh_attack_sim.csv'
+    # result_file_name = 'ssh_attack_sim_2.csv'
     # result_file_name = 'ssh_attack_to_workday-7.csv'
-    result_file_name = 'ssh_attack_to_workday_from_server-6_denoise_neg.csv'
-    result_file_name = 'ssh_attack_to_workday-9_denoise_neg.csv'
-    # result_file_name = 'legitimate_traffic_to_workday-2.csv'
+    # result_file_name = 'ssh_attack_to_workday_from_server-9_denoise_neg.csv'
+    # result_file_name = 'ssh_attack_to_workday-8_denoise_neg.csv'
+    result_file_name = 'legitimate_traffic_to_workday-3.csv'
 
     result_file_path = resource_dir + '/' + result_file_name
     output_fig_file_name = resource_dir + \
