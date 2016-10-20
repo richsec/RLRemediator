@@ -117,6 +117,7 @@ group by
     a.srcport,
     a.dstip
 ) f
+order by ts_unix asc
 ;
 
 
@@ -142,6 +143,7 @@ where (conn_dir =1 or conn_dir = 0)
     and f.dstport = 22
     and f.ts >= 1476082800000
     and f.ts <= 1476169200000
+order by ts asc
 ;
 
 -- grouping across a whole day is not good ==> introducing too many noisy positive spikes.
