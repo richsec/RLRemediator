@@ -447,7 +447,8 @@ if __name__ == "__main__":
         win_end = win_start + WIN_SIZE
         succ_ssh_flow = window_check(
             stream, win_start, win_end, atk_srcips, history_stats)
-        win_start = win_end
+        # win_start = win_end
+        win_start += WIN_SIZE / 2   # keep some overlap between windows
         if len(succ_ssh_flow) > 0:
             for flow in succ_ssh_flow:
                 print flow
