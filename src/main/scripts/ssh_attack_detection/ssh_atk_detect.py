@@ -420,10 +420,10 @@ def window_check(stream, win_start, win_end, atk_ips, history_stats):
 
 
 if __name__ == "__main__":
-    data_file_path = './resources/one_day_workday.csv'
-    atk_ip_file_path = './resources/atk_ips.csv'
-    # data_file_path = './resources/redlock_traffic_during_sim.csv'
-    # atk_ip_file_path = './resources/atk_ips_sim.csv'
+    # data_file_path = './resources/one_day_workday.csv'
+    # atk_ip_file_path = './resources/atk_ips.csv'
+    data_file_path = './resources/redlock_traffic_during_sim.csv'
+    atk_ip_file_path = './resources/atk_ips_sim.csv'
 
     data = read_result_from_csv(data_file_path)
     atk_srcips_str = read_result_from_csv(atk_ip_file_path)['srcip']
@@ -437,10 +437,10 @@ if __name__ == "__main__":
     stream = DataStream(data)
     history_stats = FlowStatHistory()
 
-    start = 1476082800000
-    end = 1476169185000
-    # start = 1475795102000
-    # end = 1475796903000
+    # start = 1476082800000
+    # end = 1476169185000
+    start = 1475795102000
+    end = 1475796903000
 
     win_start = start
     while win_start <= end:
