@@ -16,7 +16,7 @@ SSH_ATTACK_NUM_FLOW_PER_WIN_THRESHOLD = 5
 # thus if a flow alive more than that
 # then it could be a successful SSH attack.
 SSH_CONN_LIFE_TIME_THRESHOLD = 3 * 60 * 1000
-WIN_SIZE = 60 * 60 * 1000
+WIN_SIZE = 10 * 60 * 1000
 RECENT_BF_WIN_THRESHOLD = 1
 
 
