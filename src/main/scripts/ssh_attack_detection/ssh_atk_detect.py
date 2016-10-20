@@ -16,7 +16,8 @@ SSH_ATTACK_NUM_FLOW_PER_WIN_THRESHOLD = 5
 # thus if a flow alive more than that
 # then it could be a successful SSH attack.
 SSH_CONN_LIFE_TIME_THRESHOLD = 3 * 60 * 1000
-WIN_SIZE = 5 * 60 * 1000
+WIN_SIZE = 60 * 60 * 1000
+RECENT_BF_WIN_THRESHOLD = 1
 
 
 class FlowLogEnrty:
@@ -62,6 +63,13 @@ class FlowStat:
                 is_brute_force)
 
 
+class GlobalStatEntry:
+    def __init__(self):
+        self.dpf_mean = 0.
+        self.ratio_mean = 0.
+        self.ppf_mean = 0.
+
+
 class FlowStatHistory:
     """used for checking whethe the traffic is brute froce
     """
@@ -69,7 +77,13 @@ class FlowStatHistory:
     MAX_TIME_LENGTH = 30 * 60 * 1000  # ms
 
     def __init__(self):
+        # queue for statistic data of each time window
         self.stat_queues = defaultdict(
+            lambda: defaultdict(
+                lambda: defaultdict(lambda: None)))
+
+        # statistic data for global stats across windows in the queue
+        self.global_stats = defaultdict(
             lambda: defaultdict(
                 lambda: defaultdict(lambda: None)))
 
@@ -81,10 +95,16 @@ class FlowStatHistory:
                 for conn_dir in tmp2.keys():
                     stat = tmp2[conn_dir]
                     queue = self.stat_queues[srcip][dstip][conn_dir]
+                    global_stat = self.global_stats[srcip][dstip][conn_dir]
 
                     if queue is None:
                         queue = deque()
                         self.stat_queues[srcip][dstip][conn_dir] = queue
+
+                    if global_stat is None:
+                        global_stat = GlobalStatEntry()
+                        self.global_stats[srcip][dstip][conn_dir] = global_stat
+
                     ts = stat.win_start
                     queue.append(stat)
                     # if queue is too long, remove the last one
@@ -97,19 +117,17 @@ class FlowStatHistory:
                         queue.popleft()
                         oldest_stat = queue[0]
 
-                    self._classify_brute_force(stat, queue)
+                    self._classify_brute_force(stat, queue, global_stat)
 
-    def _classify_brute_force(self, stat, queue):
+    def _classify_brute_force(self, stat, queue, global_stat):
         # decide whether a srcip to dstip is a brute force attack
         # By looking into the data inside the window,
         # we requires:
         # 1. mean_ppf is in the range of attack
         # 2. var_ppf, var_dpf, var_ratio are within threshold
         # (e.g. 20% of mean)
-        # 
         # We think historical stats for previous windows are also useful
         # For SSH brute force, it should be in a stable traffic pattern
-
         stat.is_brute_force = False
 
         # for SSH attacker, the srcip is usually only used for attacking
@@ -137,10 +155,14 @@ class FlowStatHistory:
         dpf_mean /= total_num_flows
         ratio_mean /= total_num_flows
 
+        global_stat.dpf_mean = dpf_mean
+        global_stat.ppf_mean = ppf_mean
+        global_stat.ratio_mean = ratio_mean
+
         # if a few recent window are bf attack, then the current window
         # is also likely to be. Cause if successful attack happens,
         # then the stat in current window may be different.
-        if num_recent_bf_attack > 3:
+        if num_recent_bf_attack >= RECENT_BF_WIN_THRESHOLD:
             stat.is_brute_force = True
             return
 
@@ -176,6 +198,9 @@ class FlowStatHistory:
         if queue is None:
             return False
         return queue[len(queue) - 1].is_brute_force
+
+    def get_global_stat(self, srcip, dstip, conn_dir):
+        return self.global_stats[srcip][dstip][conn_dir]
 
 
 class DataStream:
@@ -282,6 +307,59 @@ def calculate_flow_stats(grouped_data, win_start, win_end):
     return flow_stats
 
 
+def _is_anomalous_flow(flow, global_stat):
+    # flow with anomalous behavior is also likely to be successful
+    # but it is hard to know the pattern.
+    # Thus cannot accurately separate it from noisy spikes.
+    # A conservation rule:
+    dpf = flow.bytes_vol - 40 * flow.pkt_vol
+    ratio = flow.bytes_vol / float(flow.pkt_vol)
+    return abs(0.5 - dpf / global_stat.dpf_mean % 1) < 0.45 and\
+        abs(dpf - global_stat.dpf_mean) / global_stat.dpf_mean > 0.2 and\
+        abs(ratio - global_stat.ratio_mean) / global_stat.ratio_mean > 0.2 and\
+        abs(flow.pkt_vol - global_stat.ppf_mean) / global_stat.ppf_mean > 0.2
+
+
+def detect_potential_compromise(
+        grouped_data, history_stats, long_live_fids):
+    """check each grouped flow in the current window to see whether it is
+    likely to be a successful attack
+    Note: this part is noisy for now.
+    """
+    succ_ssh_flow = list()
+
+    for srcip in grouped_data.keys():
+        tmp1 = grouped_data[srcip]
+        for dstip in tmp1.keys():
+            tmp2 = tmp1[dstip]
+            is_brute_force = history_stats.is_brute_force_traffic(
+                srcip, dstip, 1)
+            if not is_brute_force:
+                continue
+            global_stat = history_stats.get_global_stat(srcip, dstip, 1)
+            if global_stat is None:
+                continue
+
+            for srcport in tmp2.keys():
+                # srcport is not sorted in order of ts
+                # consider the traffic from attacker to victim server
+                flow = tmp2[srcport][1]
+                if flow is None:
+                    continue
+
+                # long live time flows are highly likely to be successful flow
+                if fid(flow) in long_live_fids:
+                    succ_ssh_flow.append(flow)
+                    continue
+
+                # 0.45 is a heuristic threshold
+                if _is_anomalous_flow(flow, global_stat):
+                    succ_ssh_flow.append(flow)
+                    continue
+
+    return succ_ssh_flow
+
+
 def window_check(stream, win_start, win_end, atk_ips, history_stats):
     # return mean, variation, filtered stream data (denoised)
     # identify an attack by srcip and dstip
@@ -335,59 +413,8 @@ def window_check(stream, win_start, win_end, atk_ips, history_stats):
     # and classify whether the traffic is brute force
     history_stats.add_flow_stats(flow_stats)
 
-    # test_srcip = -574476336
-    # test_dstip = 182220873
-    # test_srcip = -572150667
-    # test_dstip = 182217626
-    # test_srcip = 854153670
-    # test_dstip = -1062729170
-    # test_dir = 1
-    # if flow_stats[test_srcip][test_dstip][test_dir] is not None:
-        # print 'win: %d to %d' % (win_start, win_end)
-        # print flow_stats[test_srcip][test_dstip][test_dir]
-        # print history_stats.is_brute_force_traffic(
-        #     test_srcip, test_dstip, test_dir)
-
-    succ_ssh_flow = list()
-
-    for srcip in grouped_data.keys():
-        tmp1 = grouped_data[srcip]
-        tmp_stat1 = flow_stats[srcip]
-        for dstip in tmp1.keys():
-            tmp2 = tmp1[dstip]
-            stat = tmp_stat1[dstip][1]
-            is_brute_force = history_stats.is_brute_force_traffic(
-                srcip, dstip, 1)
-            if not is_brute_force:
-                continue
-            for srcport in tmp2.keys():
-                # srcport is not sorted in order of ts
-                # consider the traffic from attacker to victim server
-                flow = tmp2[srcport][1]
-                if flow is None:
-                    continue
-
-                # long live time flows are highly likely to be successful flow
-                if fid(flow) in long_live_fids:
-                    succ_ssh_flow.append(flow)
-                    continue
-
-                # flow with anomalous behavior is also likely to be successful
-                # but it is hard to know the pattern.
-                # Thus cannot accurately separate it from noisy spikes.
-                # A conservation rule:
-                dpf = flow.bytes_vol - 40 * flow.pkt_vol
-                ratio = flow.bytes_vol / float(flow.pkt_vol)
-
-                # 0.45 is a heuristic threshold
-                if abs(0.5 - dpf / stat.dpf_mean % 1) < 0.45 and\
-                        abs(dpf - stat.dpf_mean) / stat.dpf_mean > 0.2 and\
-                        abs(0.5 - ratio / stat.ratio_mean % 1) < 0.45 and\
-                        abs(ratio - stat.ratio_mean) / stat.ratio_mean > 0.2 and\
-                        abs(0.5 - flow.pkt_vol / stat.ppf_mean % 1) < 0.45 and\
-                        abs(flow.pkt_vol - stat.ppf_mean) / stat.ppf_mean > 0.2 :
-                    succ_ssh_flow.append(flow)
-                    continue
+    succ_ssh_flow = detect_potential_compromise(
+        grouped_data, history_stats, long_live_fids)
 
     return succ_ssh_flow
 
@@ -395,8 +422,8 @@ def window_check(stream, win_start, win_end, atk_ips, history_stats):
 if __name__ == "__main__":
     data_file_path = './resources/one_day_workday.csv'
     atk_ip_file_path = './resources/atk_ips.csv'
-    data_file_path = './resources/redlock_traffic_during_sim.csv'
-    atk_ip_file_path = './resources/atk_ips_sim.csv'
+    # data_file_path = './resources/redlock_traffic_during_sim.csv'
+    # atk_ip_file_path = './resources/atk_ips_sim.csv'
 
     data = read_result_from_csv(data_file_path)
     atk_srcips_str = read_result_from_csv(atk_ip_file_path)['srcip']
@@ -412,8 +439,8 @@ if __name__ == "__main__":
 
     start = 1476082800000
     end = 1476169185000
-    start = 1475795102000
-    end = 1475796903000
+    # start = 1475795102000
+    # end = 1475796903000
 
     win_start = start
     while win_start <= end:
