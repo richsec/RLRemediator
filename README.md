@@ -4,7 +4,7 @@ This repo contains code which is integrating SQS and Lambda to perform a consume
 
 ## Deployment Guide
 
-Use the following command to deploy the example. Replace `<YOUR_NICKNAME>` with your nickname.
+Use the following command to deploy the example. Replace `<NEW_BUCKET_NAME>` with your nickname.
 
 ```
 aws s3 mb s3://sqs-lambda-<NEW_BUCKET_NAME>
