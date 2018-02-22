@@ -1,147 +1,15 @@
-{
-    "AWSTemplateFormatVersion": "2010-09-09",
+ "Transform": "AWS::Serverless-2016-10-31",
     "Description": "SQS and Lambda example.",
     "Resources": {
-        "ConsumerLambda": {
-            "Type": "AWS::Lambda::Function",
-            "Properties": {
-                "Code": {
-                    "S3Bucket": "sqs-lambda-remediator",
-                    "S3Key": "b25c9433a9b817daf634f7773c2196c0"
-                },
-                "Tags": [
-                    {
-                        "Value": "SAM",
-                        "Key": "lambda:createdBy"
-                    }
-                ],
-                "MemorySize": 128,
-                "Environment": {
-                    "Variables": {
-                        "WORKER_LAMBDA_NAME": {
-                            "Ref": "WorkerLambda"
-                        },
-                        "TASK_QUEUE_URL": {
-                            "Ref": "TaskQueue"
-                        }
-                    }
-                },
-                "Handler": "index.handler",
-                "Role": {
-                    "Fn::Sub": "${ConsumerLambdaRole.Arn}"
-                },
-                "Timeout": 60,
-                "Runtime": "nodejs6.10"
-            }
-        },
-        "WorkerLambdaRole": {
-            "Type": "AWS::IAM::Role",
-            "Properties": {
-                "Path": "/",
-                "Policies": [
-                    {
-                        "PolicyName": "logs",
-                        "PolicyDocument": {
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "logs:CreateLogGroup",
-                                        "logs:CreateLogStream",
-                                        "logs:PutLogEvents"
-                                    ],
-                                    "Resource": "arn:aws:logs:*:*:*",
-                                    "Effect": "Allow"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "PolicyName": "sqs",
-                        "PolicyDocument": {
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "sqs:DeleteMessage"
-                                    ],
-                                    "Resource": {
-                                        "Fn::Sub": "${TaskQueue.Arn}"
-                                    },
-                                    "Effect": "Allow"
-                                }
-                            ]
-                        }
-                    }
-                ],
-                "AssumeRolePolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Action": [
-                                "sts:AssumeRole"
-                            ],
-                            "Effect": "Allow",
-                            "Principal": {
-                                "Service": "lambda.amazonaws.com"
-                            }
-                        }
-                    ]
-                }
-            }
-        },
         "TaskQueue": {
             "Type": "AWS::SQS::Queue",
             "Properties": {
+                "VisibilityTimeout": 60,
                 "RedrivePolicy": {
                     "deadLetterTargetArn": {
                         "Fn::Sub": "${DeadLetterQueue.Arn}"
                     },
                     "maxReceiveCount": 10
-                },
-                "VisibilityTimeout": 60
-            }
-        },
-        "WorkerLambda": {
-            "Type": "AWS::Lambda::Function",
-            "Properties": {
-                "Code": {
-                    "S3Bucket": "sqs-lambda-remediator",
-                    "S3Key": "3abdd49f36406f702631dd8d721826e7"
-                },
-                "Tags": [
-                    {
-                        "Value": "SAM",
-                        "Key": "lambda:createdBy"
-                    }
-                ],
-                "MemorySize": 128,
-                "Environment": {
-                    "Variables": {
-                        "TASK_QUEUE_URL": {
-                            "Ref": "TaskQueue"
-                        }
-                    }
-                },
-                "Handler": "index.handler",
-                "Role": {
-                    "Fn::Sub": "${WorkerLambdaRole.Arn}"
-                },
-                "Timeout": 60,
-                "Runtime": "nodejs6.10"
-            }
-        },
-        "ConsumerLambdaTimerPermission": {
-            "Type": "AWS::Lambda::Permission",
-            "Properties": {
-                "Action": "lambda:invokeFunction",
-                "Principal": "events.amazonaws.com",
-                "FunctionName": {
-                    "Ref": "ConsumerLambda"
-                },
-                "SourceArn": {
-                    "Fn::GetAtt": [
-                        "ConsumerLambdaTimer",
-                        "Arn"
-                    ]
                 }
             }
         },
@@ -151,6 +19,20 @@
         "ConsumerLambdaRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "lambda.amazonaws.com"
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
                 "Path": "/",
                 "Policies": [
                     {
@@ -158,13 +40,13 @@
                         "PolicyDocument": {
                             "Statement": [
                                 {
+                                    "Effect": "Allow",
                                     "Action": [
                                         "logs:CreateLogGroup",
                                         "logs:CreateLogStream",
                                         "logs:PutLogEvents"
                                     ],
-                                    "Resource": "arn:aws:logs:*:*:*",
-                                    "Effect": "Allow"
+                                    "Resource": "arn:aws:logs:*:*:*"
                                 }
                             ]
                         }
@@ -174,13 +56,13 @@
                         "PolicyDocument": {
                             "Statement": [
                                 {
+                                    "Effect": "Allow",
                                     "Action": [
                                         "sqs:ReceiveMessage"
                                     ],
                                     "Resource": {
                                         "Fn::Sub": "${TaskQueue.Arn}"
-                                    },
-                                    "Effect": "Allow"
+                                    }
                                 }
                             ]
                         }
@@ -190,49 +72,123 @@
                         "PolicyDocument": {
                             "Statement": [
                                 {
+                                    "Effect": "Allow",
                                     "Action": [
                                         "lambda:InvokeFunction"
                                     ],
                                     "Resource": {
                                         "Fn::Sub": "${WorkerLambda.Arn}"
-                                    },
-                                    "Effect": "Allow"
+                                    }
                                 }
                             ]
                         }
                     }
-                ],
+                ]
+            }
+        },
+        "ConsumerLambda": {
+            "Type": "AWS::Serverless::Function",
+            "Properties": {
+                "CodeUri": "./consumer",
+                "Handler": "index.handler",
+                "MemorySize": 128,
+                "Role": {
+                    "Fn::Sub": "${ConsumerLambdaRole.Arn}"
+                },
+                "Runtime": "nodejs6.10",
+                "Timeout": 60,
+                "Environment": {
+                    "Variables": {
+                        "TASK_QUEUE_URL": {
+                            "Ref": "TaskQueue"
+                        },
+                        "WORKER_LAMBDA_NAME": {
+                            "Ref": "WorkerLambda"
+                        }
+                    }
+                },
+                "Events": {
+                    "Timer": {
+                        "Type": "Schedule",
+                        "Properties": {
+                            "Schedule": "rate(1 minute)"
+                        }
+                    }
+                }
+            }
+        },
+        "WorkerLambdaRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
                 "AssumeRolePolicyDocument": {
                     "Version": "2012-10-17",
                     "Statement": [
                         {
-                            "Action": [
-                                "sts:AssumeRole"
-                            ],
                             "Effect": "Allow",
                             "Principal": {
                                 "Service": "lambda.amazonaws.com"
-                            }
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
                         }
                     ]
-                }
-            }
-        },
-        "ConsumerLambdaTimer": {
-            "Type": "AWS::Events::Rule",
-            "Properties": {
-                "ScheduleExpression": "rate(1 minute)",
-                "Targets": [
+                },
+                "Path": "/",
+                "Policies": [
                     {
-                        "Id": "ConsumerLambdaTimerLambdaTarget",
-                        "Arn": {
-                            "Fn::GetAtt": [
-                                "ConsumerLambda",
-                                "Arn"
+                        "PolicyName": "logs",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "logs:CreateLogGroup",
+                                        "logs:CreateLogStream",
+                                        "logs:PutLogEvents"
+                                    ],
+                                    "Resource": "arn:aws:logs:*:*:*"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "PolicyName": "sqs",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "sqs:DeleteMessage"
+                                    ],
+                                    "Resource": {
+                                        "Fn::Sub": "${TaskQueue.Arn}"
+                                    }
+                                }
                             ]
                         }
                     }
                 ]
+            }
+        },
+        "WorkerLambda": {
+            "Type": "AWS::Serverless::Function",
+            "Properties": {
+                "CodeUri": "./worker",
+                "Handler": "index.handler",
+                "MemorySize": 128,
+                "Role": {
+                    "Fn::Sub": "${WorkerLambdaRole.Arn}"
+                },
+                "Runtime": "nodejs6.10",
+                "Timeout": 60,
+                "Environment": {
+                    "Variables": {
+                        "TASK_QUEUE_URL": {
+                            "Ref": "TaskQueue"
+                        }
+                    }
+                }
             }
         }
     }
