@@ -17,9 +17,23 @@ function deleteMessage(receiptHandle, cb) {
 
 function work(task, cb) {
   console.log(task);
-  // TODO implement
+  sqs.receiveMessage({
+     QueueUrl: TASK_QUEUE_URL,
+     MaxNumberOfMessages: 1, // One Message Max
+     VisibilityTimeout: 60, // Job Run Max
+     WaitTimeSeconds: 3 // Message Wait Max
+   }, function(err, data) {
+     // If any Messages are present
+     if (data.Messages) {
+        // Retrieve the first available message
+        var message = data.Messages[0],
+            body = JSON.parse(message.Body);
+        // Present message body in JSON to be used as reference
+        UseMessageBody(body, message);  // TODO Check Body for public IP and compare to whitelist
+     }
+   });
   cb();
-}   
+}
 
 exports.handler = function(event, context, callback) {
   work(event.Body, function(err) {
