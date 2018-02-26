@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
-Description: 'SQS and Lambda example.'
+Description: 'RL-SQS-Lambda-Remediator.'
 Resources:
   TaskQueue: 
     Type: AWS::SQS::Queue
