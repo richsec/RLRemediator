@@ -1,4 +1,4 @@
-# ⚡️ SQS Worker with Serverless
+# ⚡️ RedLock Auto-remediation solution based on SQS Worker with Serverless
 
 [![license](https://img.shields.io/github/license/sbstjn/lawos.svg)](https://github.com/sbstjn/sqs-worker-serverless/blob/master/LICENSE.md)
 [![CircleCI](https://img.shields.io/circleci/project/github/sbstjn/sqs-worker-serverless/master.svg)](https://circleci.com/gh/sbstjn/sqs-worker-serverless)
@@ -10,34 +10,33 @@ More details: [Serverless Amazon SQS Worker with AWS Lambda](https://sbstjn.com/
 ## Setup
 
 - SQS Queue with your messages
-- SNS Topic to handle CloudWatch Alarms
-- DynamoDB table to persist configuration
 - CloudWatch Schedule as cron replacement
-- Three (`scale`, `worker`, `process`) AWS Lambda functions
+- Two (`worker`, `process`) AWS Lambda functions
 
 ## Workflow
 
-- CloudWatch Alarms on queue length post to SNS
-- SNS Topic triggers `scale` Lambda function
-- Function `scale` updates configuration in DynamoDB 
 - CloudWatch Schedule invokes `worker` every `x` minute(s)
-- Function `worker` reads configuration from DynamoDB
+- Function `worker` evaluates available message size in the SQS queue and decides how many `process` invokations are needed
 - Function `worker` invokes `process` function(s)
+- Function `process` receives from SQS, parse alert auto-remediate-cli, and then executes corresponding AWS api
 
-## Auto-Scaling with CloudWatch Alerts
+## RedLock Developer Deploy
 
-![](./docs/scale.png) 
+AWS DEV account is required to develop and maintain this tool. See [serverless](https://serverless.com/framework/docs/providers/aws/guide/credentials/) for how to set up AWS account with serverless framework. Configure proper AWS profile and then use `export AWS_PROFILE="your-dev-profile"` would be quick to start.
 
-## Workers with CloudWatch Schedule
-
-![](./docs/worker.png)
-
-## Deploy
 
 ```bash
 $ > yarn install
 $ > yarn deploy
 ```
+To update the deployed stacks
+```bash
+$ > serverless deploy
+```
+
+## Customer Deployent
+
+CloudFormation file can be sent to customer for easy deployment.
 
 ## Add noise to SQS
 
