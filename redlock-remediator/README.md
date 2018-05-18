@@ -35,6 +35,7 @@ $ > serverless deploy
 ```
 
 When functions have been tested and ready to be released to customer
+
 - Go to S3 bucket s3://redlock-remediator-dev-serverlessdeploymentbucket-btrae29ujllf/serverless/redlock-remediator/dev/<timestamp>/
 - Make redlock-remediator.zip public readable. This file hosts the Lambda code to be deployed to customer environment.
 - Update `redlock-remediator.yml` with the correct Lambda Code S3Key.
