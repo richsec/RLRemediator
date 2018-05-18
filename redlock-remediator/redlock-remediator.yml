@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: The AWS CloudFormation template for RedLock Auto-remediator Serverless application
+Resources:
+  WorkerLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/redlock-remediator-worker
+  ProcessLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/redlock-remediator-process
+  IamRoleLambdaExecution:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Join 
+            - '-'
+            - - dev
+              - redlock-remediator
+              - lambda
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                Resource:
+                  - !Sub >-
+                    arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/redlock-remediator-worker:*
+                  - !Sub >-
+                    arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/redlock-remediator-process:*
+              - Effect: Allow
+                Action:
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - !Sub >-
+                    arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/redlock-remediator-worker:*:*
+                  - !Sub >-
+                    arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/redlock-remediator-process:*:*
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                Resource: 'arn:aws:lambda:*:*:function:redlock-remediator-process'
+              - Effect: Allow
+                Action:
+                  - 'sqs:GetQueueAttributes'
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:ReceiveMessage'
+                Resource: 'arn:aws:sqs:*:*:redlock-remediator-messages'
+              - Effect: Allow
+                Action:
+                  - 'iam:UpdateAccountPasswordPolicy'
+                  - 'ec2:ModifyImageAttribute'
+                  - 'ec2:RevokeSecurityGroupIngress'
+                  - 'rds:ModifyDBSnapshotAttribute'
+                  - 's3:PutBucketAcl'
+                Resource: '*'
+      Path: /
+      RoleName: !Join 
+        - '-'
+        - - redlock-remediator
+          - dev
+          - us-east-1
+          - lambdaRole
+  WorkerLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: redlock-remediator-dev-serverlessdeploymentbucket-btrae29ujllf
+        S3Key: >-
+          serverless/redlock-remediator/dev/1526602420589-2018-05-18T00:13:40.589Z/redlock-remediator.zip
+      FunctionName: redlock-remediator-worker
+      Handler: functions/worker.handler
+      MemorySize: 128
+      Role: !GetAtt 
+        - IamRoleLambdaExecution
+        - Arn
+      Runtime: nodejs8.10
+      Timeout: 10
+      Environment:
+        Variables:
+          process: redlock-remediator-process
+          sqs: redlock-remediator-messages
+    DependsOn:
+      - WorkerLogGroup
+      - IamRoleLambdaExecution
+  ProcessLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: redlock-remediator-dev-serverlessdeploymentbucket-btrae29ujllf
+        S3Key: >-
+          serverless/redlock-remediator/dev/1526602420589-2018-05-18T00:13:40.589Z/redlock-remediator.zip
+      FunctionName: redlock-remediator-process
+      Handler: functions/process.handler
+      MemorySize: 128
+      Role: !GetAtt 
+        - IamRoleLambdaExecution
+        - Arn
+      Runtime: nodejs8.10
+      Timeout: 60
+      Environment:
+        Variables:
+          sqs: redlock-remediator-messages
+    DependsOn:
+      - ProcessLogGroup
+      - IamRoleLambdaExecution
+  WorkerEventsRuleSchedule1:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      ScheduleExpression: rate(1 minute)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt 
+            - WorkerLambdaFunction
+            - Arn
+          Id: workerSchedule
+  WorkerLambdaPermissionEventsRuleSchedule1:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !GetAtt 
+        - WorkerLambdaFunction
+        - Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: !Join 
+        - ''
+        - - events.
+          - !Ref 'AWS::URLSuffix'
+      SourceArn: !GetAtt 
+        - WorkerEventsRuleSchedule1
+        - Arn
+  Messages:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: redlock-remediator-messages
+      MessageRetentionPeriod: 1209600
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt 
+          - MessagesDeadLetterQueue
+          - Arn
+        maxReceiveCount: 10
+  MessagesDeadLetterQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: redlock-remediator-messages-dead-letter-queue
+      MessageRetentionPeriod: 1209600
