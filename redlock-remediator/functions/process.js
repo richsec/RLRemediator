@@ -25,6 +25,7 @@ module.exports.handler = function handler(event, context, callback) {
         done();
       });
     }
+    console.log(alert.alertRemediationCli.cliScript);
     
     // convert aws cli to api
     var awsapi = {
@@ -38,28 +39,37 @@ module.exports.handler = function handler(event, context, callback) {
         case "_":
           break;
         case "region":
-          awsapi.region = awscli[key].replace(/"/g, "");
+          awsapi.region = awscli[key];
           break;
         case "acl":
-          awsapi.params.ACL = awscli[key].replace(/"/g, "");
+          awsapi.params.ACL = awscli[key];
           break;
         case "cidr":
-          awsapi.params.CidrIp = awscli[key].replace(/"/g, "");
+          awsapi.params.CidrIp = awscli[key];
           break;
         default:
-          awsapi.params[camelCase(key, {pascalCase: true})] = awscli[key].replace(/"/g, "");
+          switch (typeof awscli[key]) {
+            case "undefined":
+              awsapi.params[camelCase(key, {pascalCase: true})] = true;
+              break;
+            case "string":
+              awsapi.params[camelCase(key, {pascalCase: true})] = awscli[key].replace(/"/g, "");
+              break;
+            default:
+              awsapi.params[camelCase(key, {pascalCase: true})] = awscli[key];
+              break;
+          }
           break;
       }
     });
     
+    console.log(awsapi);
     // double check redediation api availability
     if (undefined == awsapi.service || ! (awsapi.service in supportedServices)) { 
       return new Promise(done => {
         done();
       });
     }
-
-    console.log(awsapi);
     
     return new Promise(async (resolve, reject) => {
       // create aws service api
@@ -97,3 +107,4 @@ module.exports.handler = function handler(event, context, callback) {
   });
   Q.work(() => Promise.resolve(context.getRemainingTimeInMillis() < 1000)).then(console.log).then(callback);
 }
+
