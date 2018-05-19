@@ -77,7 +77,7 @@ Resources:
       Code:
         S3Bucket: redlock-remediator-dev-serverlessdeploymentbucket-btrae29ujllf
         S3Key: >-
-          serverless/redlock-remediator/dev/1526681258253-2018-05-18T22:07:38.253Z/redlock-remediator.zip
+          serverless/redlock-remediator/dev/1526689232295-2018-05-19T00:20:32.295Z/redlock-remediator.zip
       FunctionName: redlock-remediator-worker
       Handler: functions/worker.handler
       MemorySize: 128
@@ -99,7 +99,7 @@ Resources:
       Code:
         S3Bucket: redlock-remediator-dev-serverlessdeploymentbucket-btrae29ujllf
         S3Key: >-
-          serverless/redlock-remediator/dev/1526681258253-2018-05-18T22:07:38.253Z/redlock-remediator.zip
+          serverless/redlock-remediator/dev/1526689232295-2018-05-19T00:20:32.295Z/redlock-remediator.zip
       FunctionName: redlock-remediator-process
       Handler: functions/process.handler
       MemorySize: 128
