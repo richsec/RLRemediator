@@ -47,6 +47,18 @@ module.exports.handler = function handler(event, context, callback) {
         case "cidr":
           awsapi.params.CidrIp = awscli[key];
           break;
+        case "protocol":
+          awsapi.params.IpProtocol = awscli[key];
+          break;
+        case "port":
+          var prange = awscli[key].split('-');
+          awsapi.params.FromPort = prange[0];
+          if (prange.length > 1) {
+              awsapi.params.ToPort = prange[1];
+          } else {
+              awsapi.params.ToPort = prange[0]
+          }
+          break;
         default:
           switch (typeof awscli[key]) {
             case "undefined":
