@@ -31,7 +31,7 @@ module.exports.handler = function handler(event, context, callback) {
     var awsapi = {
       params : {}
     };
-    var awscli = parseArgs(alert.alertRemediationCli.cliScript.split(' '));
+    var awscli = parseArgs(alert.alertRemediationCli.cliScript.replace(/^\s+|[\s;]+$/gm,'').split(' '));
     awsapi.service = awscli._[1];
     awsapi.method = camelCase(awscli._[2]);
     Object.keys(awscli).forEach(function(key) {
